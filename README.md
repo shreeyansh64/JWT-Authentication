@@ -1,3 +1,3 @@
 ## Description
 
-This is an authentication code using Json Web Tokens.
+Implemented JSON Web Token authentication to enable secure, stateless user sessions.
