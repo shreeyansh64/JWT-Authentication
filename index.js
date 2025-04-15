@@ -5,7 +5,7 @@ const jwtpass = "thisisasec"
 const port = process.env.PORT || 3000;
 const app = exp();
 
-mon.connect('mongodb+srv://admin:12ka442ka1@cloudclus.hlbugrd.mongodb.net/userinfo?retryWrites=true&w=majority&appName=Cloudclus');
+mon.connect('mongo_URL');
 
 const User = mon.model('Users',{
     username : String,
