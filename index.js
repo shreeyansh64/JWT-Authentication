@@ -1,85 +1,79 @@
-const { ALL } = require('dns');
 const exp = require('express');
+const mon = require('mongoose');
 const jwt = require('jsonwebtoken');
-const jwtpass = "123456";
-const app = exp();
+const jwtpass = "thisisasec"
 const port = process.env.PORT || 3000;
+const app = exp();
+
+mon.connect('mongodb+srv://admin:12ka442ka1@cloudclus.hlbugrd.mongodb.net/userinfo?retryWrites=true&w=majority&appName=Cloudclus');
+
+const User = mon.model('Users',{
+    username : String,
+    pass : String
+});
 
 app.use(exp.json());
 
-const ALL_USERS = [
-    {
-        username : "golu",
-        pass : "zeus20659",
-        name : "Shreeyansh"
-    },
-    {
-        username : "nishu",
-        pass : "zeret",
-        name : "Shivansh"
-    },
-    {
-        username : "manny",
-        pass : "abraxos",
-        name : "Mannat"
-    }
-]
-
-function checkuser(user,pass){
-    let userexist = false;
-    for(let i =0; i<ALL_USERS.length;i++){
-        if(ALL_USERS[i].username == user && ALL_USERS[i].pass == pass){
-            userexist = true;
-        }
-    }
-    return userexist;
-    }
-
 app.get('/',(req,res)=>{
-    res.send("Connected Successfully 🎉, Kindly move to the signin page")
+    res.status(200).send("Connected Successfully !!")
 })
 
-app.post('/signin',function(req,res){
-    const username = req.body.username;
-    const pass = req.body.pass;
-
-    if(!checkuser(username,pass)){
-        return res.status(403).json({
-            "Error" : "User does not exist"
-        });
+app.post('/signup',async function(req,res){
+    const uname = req.body.user;
+    const upass = req.body.pass;
+    const existinguser = await User.findOne({ username : uname});
+    if(existinguser){
+        res.status(400).json({
+            Error : "Username already exists"
+        })
     }
+    const adduser = new User({
+        username : uname,
+        pass : upass
+    })
+    adduser.save();
+    res.status(200).send("Welcome aboard "+uname+" ! You can now proceed to login");
+})
 
-    var token = jwt.sign({username : username},jwtpass);
-    return res.status(200).json({
+app.post('/login',async function(req,res){
+    const username = req.body.user;
+    const passwd = req.body.pass;
+    const dbinfo = await User.findOne({
+        username: username
+    })
+    if(!dbinfo){
+        res.status(404).json({
+            Error : "Invalid User"
+        })
+    }
+    if(!dbinfo.username == username || !dbinfo.pass == passwd){
+        res.status(403).json({
+            Error:"Incorrect Credentials"
+        })
+    }
+    let token = jwt.sign({username : username},jwtpass);
+    res.status(200).json({
         token
     })
+
 })
 
-app.get('/users',function(req,res){
-    const token = req.headers.authorization;
+app.get('/normal',(req,res)=>{
     try{
-        const decoded = jwt.verify(token,jwtpass);
-        const username = decoded.username;
-        return res.json({
-            users : ALL_USERS.filter(function(val){
-                if(val.username == username){
-                    return false;
-                }else{
-                    return true;
-                }
-            })
-        })
+        const token = req.headers.authorization;
+        const decode = jwt.verify(token,jwtpass);
+        const username = decode.username;
+        res.status(200).send("It all works !!");
     }catch(err){
-        return res.status(403).json({
-            "Error":"Invalid token"
+        res.status(403).json({
+            Error:"Authorization failure."
         })
     }
 })
 
-
-app.use((err,req,res,next)=>{
-    req.status(500).json({
-        "Error" : "There seems to be a problem with our server"
+app.use(function(err,req,res,next){
+    res.status(500).json({
+        "Error":"Something is up with up servers"
     })
 })
 
